@@ -1,0 +1,81 @@
+{
+  "area": {
+    "origin_lat": 49.1294,
+    "origin_lon": 22.6593,
+    "origin_alt": 0.0,
+    "area_width_m": 6000,
+    "area_height_m": 6000,
+    "gcs_offset_x_m": -3500,
+    "gcs_offset_y_m": 999
+  },
+  "swarm": {
+    "num_drones": 2,
+    "cruise_speed_mps": 18,
+    "search_altitude_m": 80,
+    "lane_spacing_m": 200,
+    "arrival_radius_m": 6.0,
+    "battery_drain_base_rate": 0.015,
+    "battery_drain_speed_factor": 0.012,
+    "battery_low_threshold": 25,
+    "planner_mode": "RELAY_ANCHORED",
+    "callsigns": [
+      "Drone-1",
+      "Drone-2"
+    ]
+  },
+  "rf": {
+    "pl_0_dbm": 42,
+    "path_loss_exponent": 3.2,
+    "shadowing_sigma_db": 4.5,
+    "rx_sensitivity_dbm": -98
+  },
+  "mesh": {
+    "mesh_range_m": 3500,
+    "gcs_range_m": 7500,
+    "tx_power_dbm": 33,
+    "mesh_sensitivity_dbm": -100
+  },
+  "gsm": {
+    "normal_rssi_dbm": -75,
+    "blackout_rssi_dbm": -122,
+    "tower_offset_m": 2800,
+    "grid_resolution_m": 200,
+    "blackout_radius_m": 0.0,
+    "center_offset_x_m": 0.0,
+    "center_offset_y_m": 0.0,
+    "tower_offset_x_m": null,
+    "tower_offset_y_m": null
+  },
+  "estimation": {
+    "max_history_observations": 30,
+    "recency_decay_factor": 0.04,
+    "base_uncertainty_radius_m": 120,
+    "min_uncertainty_radius_m": 15
+  },
+  "victims": [
+    {
+      "mac": "e2:11:45:90:bc:31",
+      "local_x": 1115,
+      "local_y": 944,
+      "signal_type": "LTE_DIRECT_UPLINK",
+      "tx_power_dbm": 23,
+      "burst_interval_sec": 4
+    },
+    {
+      "mac": "bc:88:21:40:99:12",
+      "local_x": -1400,
+      "local_y": 1100,
+      "signal_type": "WIFI_PROBE_REQ",
+      "tx_power_dbm": 16,
+      "burst_interval_sec": 6
+    },
+    {
+      "mac": "32:fe:09:aa:51:77",
+      "local_x": 600,
+      "local_y": -1500,
+      "signal_type": "LTE_DIRECT_UPLINK",
+      "tx_power_dbm": 21,
+      "burst_interval_sec": 5.5
+    }
+  ]
+}
