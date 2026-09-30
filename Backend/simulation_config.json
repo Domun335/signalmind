@@ -3,10 +3,10 @@
     "origin_lat": 49.2992,
     "origin_lon": 19.9395,
     "origin_alt": 0.0,
-    "area_width_m": 10000,
-    "area_height_m": 10000,
-    "gcs_offset_x_m": -1500,
-    "gcs_offset_y_m": -1500
+    "area_width_m": 7000,
+    "area_height_m": 5400,
+    "gcs_offset_x_m": -4437,
+    "gcs_offset_y_m": -179
   },
   "swarm": {
     "num_drones": 4,
@@ -41,12 +41,12 @@
   },
   "gsm": {
     "normal_rssi_dbm": -75,
-    "blackout_rssi_dbm": -125,
+    "blackout_rssi_dbm": -122,
     "tower_offset_m": 2800,
     "grid_resolution_m": 200,
-    "blackout_radius_m": 4100,
-    "center_offset_x_m": -2965,
-    "center_offset_y_m": -3121,
+    "blackout_radius_m": 0.0,
+    "center_offset_x_m": -348,
+    "center_offset_y_m": -2198,
     "tower_offset_x_m": null,
     "tower_offset_y_m": null
   },
@@ -59,16 +59,16 @@
   "victims": [
     {
       "mac": "e2:11:45:90:bc:31",
-      "local_x": 2200,
-      "local_y": 1800,
+      "local_x": 2193,
+      "local_y": 45,
       "signal_type": "LTE_DIRECT_UPLINK",
       "tx_power_dbm": 23,
       "burst_interval_sec": 4
     },
     {
       "mac": "bc:88:21:40:99:12",
-      "local_x": -2400,
-      "local_y": 2100,
+      "local_x": 2864,
+      "local_y": -2024,
       "signal_type": "WIFI_PROBE_REQ",
       "tx_power_dbm": 16,
       "burst_interval_sec": 6
@@ -80,6 +80,30 @@
       "signal_type": "LTE_DIRECT_UPLINK",
       "tx_power_dbm": 21,
       "burst_interval_sec": 5.5
+    },
+    {
+      "mac": "02:00:49:26:63:71",
+      "local_x": 847,
+      "local_y": -428,
+      "signal_type": "WIFI_PROBE_REQ",
+      "tx_power_dbm": 16,
+      "burst_interval_sec": 5
+    },
+    {
+      "mac": "02:00:16:42:13:62",
+      "local_x": 947,
+      "local_y": -1201,
+      "signal_type": "WIFI_PROBE_REQ",
+      "tx_power_dbm": 16,
+      "burst_interval_sec": 5
+    },
+    {
+      "mac": "02:00:79:95:53:62",
+      "local_x": -19,
+      "local_y": -1544,
+      "signal_type": "WIFI_PROBE_REQ",
+      "tx_power_dbm": 16,
+      "burst_interval_sec": 5
     }
   ]
 }
