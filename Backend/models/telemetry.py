@@ -40,6 +40,10 @@ class DroneTelemetry(BaseModel):
     packets_sniffed: int = Field(default=0, description="Cumulative RF probe packets captured")
     current_lane: int = Field(default=0, description="Assigned Boustrophedon search lane index")
     planned_path: List[List[float]] = Field(default_factory=list, description="Planned flight route waypoints [[lat, lon], ...]")
+    target_poi_id: Optional[str] = Field(default=None, description="ID of victim signal POI currently being inspected in hover mode")
+    needs_battery_swap: bool = Field(default=False, description="True if drone landed with depleted battery and awaits fresh battery pack")
+    battery_swapped: bool = Field(default=False, description="True if battery was freshly swapped and drone is ready to relaunch")
+    battery_drain_rate: float = Field(default=0.0, description="Current real-time battery drain rate in %/sec")
 
 
 class MeshNode(BaseModel):
@@ -76,6 +80,19 @@ class GSMPoint(BaseModel):
     status: str = Field(..., description="'NORMAL' (-85+ dBm), 'DEGRADED' (-100 to -85 dBm), or 'BLACKOUT' (<-100 dBm)")
 
 
+class GSMSector(BaseModel):
+    id: str = Field(..., description="Tactical sector identifier e.g. A1, B2")
+    name: str = Field(..., description="Sector name e.g. Sektor A-1")
+    bounds: List[List[float]] = Field(..., description="WGS84 polygon coordinates [[lat, lon], ...]")
+    center_lat: float
+    center_lon: float
+    surveyed: bool = Field(default=False, description="True if a drone has surveyed RF in this sector")
+    status: str = Field(default="UNKNOWN", description="'UNKNOWN', 'NORMAL', 'DEGRADED', 'BLACKOUT'")
+    avg_rssi_dbm: Optional[float] = Field(default=None, description="Average measured GSM RSSI in dBm")
+    surveyed_by: Optional[str] = Field(default=None, description="Callsign of surveying UAV")
+    surveyed_time_sec: Optional[float] = Field(default=None, description="Mission elapsed seconds when surveyed")
+
+
 class POIEstimate(BaseModel):
     anonymized_id: str = Field(..., description="SHA-256 hashed and salted device ID")
     signal_type: str = Field(..., description="'WIFI_PROBE_REQ' or 'LTE_DIRECT_UPLINK'")
@@ -87,6 +104,8 @@ class POIEstimate(BaseModel):
     last_seen_epoch: float = Field(..., description="Timestamp of most recent RF pulse")
     last_rssi_dbm: float = Field(..., description="Latest RSSI recorded")
     sniffed_by_drones: List[str] = Field(default_factory=list, description="IDs of UAVs that heard this device")
+    is_being_inspected: bool = Field(default=False, description="True if a UAV is currently hovering/inspecting this POI")
+    inspecting_drone_id: Optional[str] = Field(default=None, description="Callsign or ID of UAV currently inspecting")
 
 
 class SimulationStats(BaseModel):
@@ -98,6 +117,10 @@ class SimulationStats(BaseModel):
     pois_discovered: int
     gcs_online: bool
     mesh_links_count: int
+    gsm_sectors_total: int = 0
+    gsm_sectors_surveyed: int = 0
+    gsm_sectors_blackout: int = 0
+    gsm_recon_pct: float = 0.0
 
 
 class MissionSnapshot(BaseModel):
@@ -112,3 +135,5 @@ class MissionSnapshot(BaseModel):
     gcs_position: Dict[str, float] = Field(..., description="Ground Control Station {lat, lon}")
     gsm_tower_position: Optional[Dict[str, float]] = Field(None, description="Surviving Macro GSM Tower {lat, lon}")
     gsm_crisis_center: Optional[Dict[str, float]] = Field(None, description="GSM Blackout Epicenter {lat, lon, radius_m}")
+    gsm_sectors: List[GSMSector] = Field(default_factory=list, description="Tactical reconnaissance sectors surveyed by drones")
+

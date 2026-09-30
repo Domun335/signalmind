@@ -60,6 +60,24 @@ export function SimulationContextBar({
           <Radio className="w-3.5 h-3.5 text-amber-400" />
           C2 {gcsRangeKm} km
         </span>
+
+        {snapshot?.stats?.gsm_sectors_total > 0 && (
+          <>
+            <span className="text-border hidden md:inline">|</span>
+            <span className="flex items-center gap-1 font-mono hidden md:flex">
+              <span className={`w-2 h-2 rounded-full ${snapshot.stats.gsm_sectors_blackout > 0 ? "bg-rose-500 animate-pulse" : "bg-cyan-400"}`} />
+              <span className="text-muted-foreground">GSM:</span>
+              <span className="text-cyan-300">
+                {snapshot.stats.gsm_sectors_surveyed}/{snapshot.stats.gsm_sectors_total}
+              </span>
+              {snapshot.stats.gsm_sectors_blackout > 0 && (
+                <span className="text-rose-400 font-bold ml-0.5">
+                  ({snapshot.stats.gsm_sectors_blackout} ⚠️)
+                </span>
+              )}
+            </span>
+          </>
+        )}
       </div>
 
       {/* Action: Return to Setup / Reconfigure */}

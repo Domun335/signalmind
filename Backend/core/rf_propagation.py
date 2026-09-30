@@ -4,9 +4,11 @@ Simulates radio frequency attenuation, log-normal shadowing, and victim beacon e
 """
 
 from __future__ import annotations
+import os
 import math
 import random
 import hashlib
+import secrets
 from typing import List, Tuple, Optional
 from dataclasses import dataclass
 from .coordinates import LocalPoint3D, GeoReference, SearchAreaBounds
@@ -156,7 +158,8 @@ class GroundEmitter:
     Periodically emits RF burst probe requests (Wi-Fi 802.11 / LTE PRACH).
     """
 
-    SALT = "OutOfBlack_Crisis2026_SecureSalt"
+    # Dynamic cryptographic salt (configurable via env var or randomly generated per session)
+    _SESSION_SALT = os.getenv("MAC_HASH_SALT") or secrets.token_hex(16)
 
     def __init__(
         self,
@@ -177,7 +180,7 @@ class GroundEmitter:
     @classmethod
     def _anonymize(cls, raw: str) -> str:
         """Converts raw MAC/IMEI into a privacy-preserving SHA-256 tactical token."""
-        h = hashlib.sha256((cls.SALT + raw).encode()).hexdigest()
+        h = hashlib.sha256((cls._SESSION_SALT + raw).encode()).hexdigest()
         return f"POI-{h[:8].upper()}"
 
     def tick(self, dt: float) -> bool:

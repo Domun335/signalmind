@@ -37,9 +37,14 @@ export default function Home() {
     startMission,
     pauseMission,
     resumeMission,
+    abortMission,
+    swapBattery,
+    relaunchDrone,
     resetMission,
     setSpeed,
     injectVictim,
+    inspectPOI,
+    resumeSearch,
     fetchSimulationConfig,
     updateSimulationConfig,
   } = useSimulationSocket();
@@ -95,6 +100,7 @@ export default function Home() {
         speedMultiplier={speedMultiplier}
         onStart={startMission}
         onPause={pauseMission}
+        onAbort={abortMission}
         onResume={resumeMission}
         onReset={resetMission}
         onSetSpeed={setSpeed}
@@ -123,9 +129,14 @@ export default function Home() {
 
           {/* 3-Column Zero-Scroll Tactical Command Canvas */}
           <main className="flex-1 min-h-0 p-2 md:p-2.5 grid grid-cols-1 lg:grid-cols-12 gap-2 md:gap-2.5 overflow-hidden">
-            {/* Left Column: UAV Swarm Telemetry & LiPo Battery Monitor (3 cols on lg) */}
+            {/* Left Column: UAV Swarm Telemetry & Bateria Monitor (3 cols on lg) */}
             <section className="lg:col-span-3 h-full min-h-0 flex flex-col overflow-hidden">
-              <SwarmPanel snapshot={snapshot} onFocusDrone={setFocusedCoordinate} />
+              <SwarmPanel
+                snapshot={snapshot}
+                onFocusDrone={setFocusedCoordinate}
+                onSwapBattery={swapBattery}
+                onRelaunchDrone={relaunchDrone}
+              />
             </section>
 
             {/* Center Column: Interactive Tactical GIS Map (6 cols on lg) */}
@@ -134,6 +145,8 @@ export default function Home() {
                 snapshot={snapshot}
                 focusedCoordinate={focusedCoordinate}
                 config={simulationConfig}
+                onInspectPOI={inspectPOI}
+                onResumeSearch={resumeSearch}
               />
             </section>
 
@@ -158,7 +171,12 @@ export default function Home() {
                 </TabsList>
 
                 <TabsContent value="signals" className="flex-1 min-h-0 mt-0 overflow-hidden">
-                  <SignalsPanel snapshot={snapshot} onFocusPOI={setFocusedCoordinate} />
+                  <SignalsPanel
+                    snapshot={snapshot}
+                    onFocusPOI={setFocusedCoordinate}
+                    onInspectPOI={inspectPOI}
+                    onResumeSearch={resumeSearch}
+                  />
                 </TabsContent>
 
                 <TabsContent value="network" className="flex-1 min-h-0 mt-0 overflow-hidden">

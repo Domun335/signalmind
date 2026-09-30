@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Play, Pause, RotateCcw, Plus, Settings2, Zap, Radio, Sliders, Wifi, WifiOff } from "lucide-react";
+import { Play, Pause, RotateCcw, Settings2, Zap, Radio, Sliders, Wifi, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
@@ -14,6 +14,7 @@ export function TopNav({
   speedMultiplier,
   onStart,
   onPause,
+  onAbort,
   onResume,
   onReset,
   onSetSpeed,
@@ -26,6 +27,7 @@ export function TopNav({
 
   const isRunning = missionState === "RUNNING";
   const isPaused = missionState === "PAUSED";
+  const isReturning = missionState === "RETURNING";
   const isIdle = missionState === "IDLE";
 
   return (
@@ -94,15 +96,26 @@ export function TopNav({
                 <Play className="w-3.5 h-3.5 fill-current" />
                 <span>{isPaused ? "Wznów Misję" : "Start Roju"}</span>
               </Button>
+            ) : isReturning ? (
+              <Button
+                size="sm"
+                variant="outline"
+                disabled
+                className="h-8 px-3 border-amber-500/50 bg-amber-500/10 text-amber-300 text-xs font-semibold gap-1.5 opacity-90 cursor-not-allowed shadow-[0_0_8px_rgba(245,158,11,0.2)]"
+              >
+                <RotateCcw className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                <span>Powrót roju (RTL)...</span>
+              </Button>
             ) : (
               <Button
                 size="sm"
                 variant="outline"
-                onClick={onPause}
-                className="h-8 px-3 border-amber-500/50 hover:bg-amber-500/10 text-amber-400 text-xs font-semibold gap-1.5 cursor-pointer"
+                onClick={onAbort}
+                className="h-8 px-3 border-rose-500/60 bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 hover:text-rose-200 text-xs font-semibold gap-1.5 cursor-pointer shadow-[0_0_8px_rgba(244,63,94,0.15)] transition-all"
+                title="Przerwij misję – powrót wszystkich dronów do bazy (RTL)"
               >
-                <Pause className="w-3.5 h-3.5" />
-                <span>Wstrzymaj</span>
+                <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                <span>Przerwij misję</span>
               </Button>
             )}
 
@@ -125,7 +138,7 @@ export function TopNav({
                 <Zap className="w-3 h-3 text-cyan-400" />
                 <span>PRĘDKOŚĆ:</span>
               </span>
-              {[1.0, 2.0, 5.0].map((mult) => (
+              {[1.0, 2.0, 10.0, 25.0].map((mult) => (
                 <button
                   key={mult}
                   onClick={() => onSetSpeed(mult)}
@@ -140,18 +153,6 @@ export function TopNav({
               ))}
             </div>
 
-            <div className="h-4 w-px bg-border/40 mx-0.5 hidden lg:block" />
-
-            {/* Inject Victim Button */}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={onOpenInject}
-              className="h-8 px-2.5 border-rose-500/40 bg-rose-950/20 text-rose-400 hover:bg-rose-900/30 text-xs font-medium gap-1 cursor-pointer"
-            >
-              <Plus className="w-3 h-3" />
-              <span className="hidden sm:inline">+ Ofiara</span>
-            </Button>
           </>
         ) : (
           <Button

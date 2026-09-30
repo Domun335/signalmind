@@ -18,20 +18,20 @@ export function ConfigModal({ open, onOpenChange, onFetchConfig, onUpdateConfig 
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
+    let ignore = false;
     if (open) {
-      loadData();
+      onFetchConfig()
+        .then((data) => {
+          if (!ignore && data) setConfig(data);
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
     }
-  }, [open]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const data = await onFetchConfig();
-      if (data) setConfig(data);
-    } finally {
-      setLoading(false);
-    }
-  };
+    return () => {
+      ignore = true;
+    };
+  }, [open, onFetchConfig]);
 
   const handleSave = async (e) => {
     e.preventDefault();

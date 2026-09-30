@@ -35,13 +35,15 @@ class SwarmConfig:
     search_altitude_m: float = 50.0
     lane_spacing_m: float = 90.0
     arrival_radius_m: float = 6.0
-    battery_drain_base_rate: float = 0.015
-    battery_drain_speed_factor: float = 0.012
+    battery_drain_base_rate: float = 0.020
+    battery_drain_speed_factor: float = 0.015
     battery_low_threshold: float = 20.0
     planner_mode: str = "SYNCHRONIZED_FRONT"
     callsigns: List[str] = field(default_factory=lambda: [
         "Vulture-1", "Vulture-2", "Vulture-3", "Vulture-4", "Vulture-5", "Vulture-6"
     ])
+    launch_offsets_m: Optional[List[Dict[str, float]]] = None
+    max_sensor_range_m: float = 250.0
 
 
 @dataclass

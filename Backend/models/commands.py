@@ -42,3 +42,28 @@ class SimulationConfig(BaseModel):
     mesh_range_m: float = Field(default=650.0, ge=200.0, le=2000.0, description="Maximum P2P RF mesh distance")
     gcs_range_m: float = Field(default=750.0, ge=200.0, le=3000.0, description="Max direct GCS range")
     lane_spacing_m: float = Field(default=90.0, ge=40.0, le=250.0, description="Boustrophedon sweep spacing")
+
+
+class InspectPOIRequest(BaseModel):
+    anonymized_id: str = Field(..., description="ID of victim signal POI to inspect")
+    drone_id: Optional[str] = Field(None, description="Optional specific drone ID (e.g. UAV-02). If None, closest available search drone is chosen.")
+    altitude_m: Optional[float] = Field(35.0, ge=15.0, le=100.0, description="Altitude in meters to hover/orbit over victim")
+    hover_duration_sec: Optional[float] = Field(None, description="Optional duration to hover in seconds before auto-resuming search. None = until manual resume.")
+
+
+class ResumeSearchRequest(BaseModel):
+    drone_id: Optional[str] = Field(None, description="Optional drone ID to resume original search track. If None, all inspecting drones resume.")
+
+
+class SpeedRequest(BaseModel):
+    multiplier: Optional[float] = Field(None, ge=0.1, le=50.0, description="Simulation speed multiplier")
+    speed: Optional[float] = Field(None, ge=0.1, le=50.0, description="Alternative speed value")
+
+
+class BatterySwapRequest(BaseModel):
+    drone_id: Optional[str] = Field(None, description="Optional specific drone ID to swap battery for (e.g. UAV-01). If None, all landed standby drones are serviced.")
+
+
+class RelaunchDroneRequest(BaseModel):
+    drone_id: Optional[str] = Field(None, description="Optional specific drone ID to relaunch (e.g. UAV-01). If None, all serviced standby drones relaunch.")
+

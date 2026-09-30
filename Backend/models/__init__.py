@@ -7,6 +7,7 @@ from .telemetry import (
     MeshEdge,
     MeshTopology,
     GSMPoint,
+    GSMSector,
     POIEstimate,
     SimulationStats,
     MissionSnapshot,
@@ -16,6 +17,11 @@ from .commands import (
     SimulationControlRequest,
     InjectPOIRequest,
     SimulationConfig,
+    InspectPOIRequest,
+    ResumeSearchRequest,
+    SpeedRequest,
+    BatterySwapRequest,
+    RelaunchDroneRequest,
 )
 
 __all__ = [
@@ -26,6 +32,7 @@ __all__ = [
     "MeshEdge",
     "MeshTopology",
     "GSMPoint",
+    "GSMSector",
     "POIEstimate",
     "SimulationStats",
     "MissionSnapshot",
@@ -33,4 +40,9 @@ __all__ = [
     "SimulationControlRequest",
     "InjectPOIRequest",
     "SimulationConfig",
+    "InspectPOIRequest",
+    "ResumeSearchRequest",
+    "SpeedRequest",
+    "BatterySwapRequest",
+    "RelaunchDroneRequest",
 ]

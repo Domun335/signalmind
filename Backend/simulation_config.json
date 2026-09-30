@@ -1,27 +1,31 @@
 {
   "area": {
-    "origin_lat": 49.1294,
-    "origin_lon": 22.6593,
+    "origin_lat": 49.2992,
+    "origin_lon": 19.9395,
     "origin_alt": 0.0,
-    "area_width_m": 6000,
-    "area_height_m": 6000,
-    "gcs_offset_x_m": -3500,
-    "gcs_offset_y_m": 999
+    "area_width_m": 10000,
+    "area_height_m": 10000,
+    "gcs_offset_x_m": -1500,
+    "gcs_offset_y_m": -1500
   },
   "swarm": {
-    "num_drones": 2,
+    "num_drones": 4,
     "cruise_speed_mps": 18,
     "search_altitude_m": 80,
-    "lane_spacing_m": 200,
+    "lane_spacing_m": 180,
     "arrival_radius_m": 6.0,
-    "battery_drain_base_rate": 0.015,
-    "battery_drain_speed_factor": 0.012,
+    "battery_drain_base_rate": 0.02,
+    "battery_drain_speed_factor": 0.015,
     "battery_low_threshold": 25,
-    "planner_mode": "RELAY_ANCHORED",
+    "planner_mode": "SYNCHRONIZED_FRONT",
     "callsigns": [
-      "Drone-1",
-      "Drone-2"
-    ]
+      "Eagle-1",
+      "Eagle-2",
+      "Eagle-3",
+      "Eagle-4"
+    ],
+    "launch_offsets_m": null,
+    "max_sensor_range_m": 250.0
   },
   "rf": {
     "pl_0_dbm": 42,
@@ -37,12 +41,12 @@
   },
   "gsm": {
     "normal_rssi_dbm": -75,
-    "blackout_rssi_dbm": -122,
+    "blackout_rssi_dbm": -125,
     "tower_offset_m": 2800,
     "grid_resolution_m": 200,
-    "blackout_radius_m": 0.0,
-    "center_offset_x_m": 0.0,
-    "center_offset_y_m": 0.0,
+    "blackout_radius_m": 4100,
+    "center_offset_x_m": -2965,
+    "center_offset_y_m": -3121,
     "tower_offset_x_m": null,
     "tower_offset_y_m": null
   },
@@ -55,24 +59,24 @@
   "victims": [
     {
       "mac": "e2:11:45:90:bc:31",
-      "local_x": 1115,
-      "local_y": 944,
+      "local_x": 2200,
+      "local_y": 1800,
       "signal_type": "LTE_DIRECT_UPLINK",
       "tx_power_dbm": 23,
       "burst_interval_sec": 4
     },
     {
       "mac": "bc:88:21:40:99:12",
-      "local_x": -1400,
-      "local_y": 1100,
+      "local_x": -2400,
+      "local_y": 2100,
       "signal_type": "WIFI_PROBE_REQ",
       "tx_power_dbm": 16,
       "burst_interval_sec": 6
     },
     {
       "mac": "32:fe:09:aa:51:77",
-      "local_x": 600,
-      "local_y": -1500,
+      "local_x": 1600,
+      "local_y": -2500,
       "signal_type": "LTE_DIRECT_UPLINK",
       "tx_power_dbm": 21,
       "burst_interval_sec": 5.5

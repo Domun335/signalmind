@@ -2,12 +2,12 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import L from "leaflet";
-import { Eye, EyeOff, Layers, Maximize2 } from "lucide-react";
+import { Eye, EyeOff, Layers, Maximize2, Radio, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const CARTO_API_KEY = process.env.NEXT_PUBLIC_CARTO_API_KEY || "cb1_43ac_1_8e135bd66ca3a7880d62f03e";
 
-export function TacticalMap({ snapshot, focusedCoordinate, config }) {
+export function TacticalMap({ snapshot, focusedCoordinate, config, onInspectPOI, onResumeSearch }) {
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layersRef = useRef({
@@ -19,7 +19,7 @@ export function TacticalMap({ snapshot, focusedCoordinate, config }) {
     drones: null,
     pois: null,
     gcs: null,
-    gsmGrid: null,
+    gsmSectors: null,
   });
 
   const [showFlightPaths, setShowFlightPaths] = useState(true);
@@ -117,9 +117,7 @@ export function TacticalMap({ snapshot, focusedCoordinate, config }) {
     layersRef.current.meshLines = L.layerGroup().addTo(map);
     layersRef.current.gcsRange = L.layerGroup().addTo(map);
     layersRef.current.meshRange = L.layerGroup().addTo(map);
-    layersRef.current.gsmGrid = L.layerGroup().addTo(map);
-    layersRef.current.gsmTower = L.layerGroup().addTo(map);
-    layersRef.current.gsmCrisis = L.layerGroup().addTo(map);
+    layersRef.current.gsmSectors = L.layerGroup().addTo(map);
     layersRef.current.gcs = L.layerGroup().addTo(map);
     layersRef.current.drones = L.layerGroup().addTo(map);
     layersRef.current.pois = L.layerGroup().addTo(map);
@@ -210,78 +208,144 @@ export function TacticalMap({ snapshot, focusedCoordinate, config }) {
       }).addTo(boundaryLayer);
     }
 
-    // 3. GSM Blackout Grid, Tower & Crisis Center
-    const gsmGridLayer = layersRef.current.gsmGrid;
-    const gsmTowerLayer = layersRef.current.gsmTower;
-    const gsmCrisisLayer = layersRef.current.gsmCrisis;
+    // 3. Dynamic GSM Reconnaissance Sectors (Surveyed in Real-Time by Drones)
+    const gsmSectorsLayer = layersRef.current.gsmSectors;
+    const gsmSectors = snapshot.gsm_sectors || [];
 
-    if (!showGsmBlackout) {
-      if (gsmGridLayer) gsmGridLayer.clearLayers();
-      if (gsmTowerLayer) gsmTowerLayer.clearLayers();
-      if (gsmCrisisLayer) gsmCrisisLayer.clearLayers();
+    if (!showGsmBlackout || gsmSectors.length === 0) {
+      if (gsmSectorsLayer) gsmSectorsLayer.clearLayers();
       lastGsmSignatureRef.current = null;
     } else {
-      const gsmSignature =
-        gsm_grid && gsm_grid.length > 0
-          ? `${gsm_grid.length}_${gsm_grid[0].lat}_${gsm_grid[0].lon}_${snapshot.gsm_crisis_center?.radius_m || 0}`
-          : null;
+      // Signature to skip costly DOM repainting unless sector states actually change
+      const gsmSignature = gsmSectors
+        .map((s) => `${s.id}:${s.surveyed ? 1 : 0}:${s.status}:${s.avg_rssi_dbm || 0}`)
+        .join(";");
 
-      if (gsmSignature && gsmSignature !== lastGsmSignatureRef.current && gsmGridLayer) {
-        gsmGridLayer.clearLayers();
+      if (gsmSignature !== lastGsmSignatureRef.current && gsmSectorsLayer) {
+        gsmSectorsLayer.clearLayers();
         lastGsmSignatureRef.current = gsmSignature;
-        gsm_grid.forEach((pt) => {
-          let color = "#10b981";
-          let opacity = 0.12;
-          if (pt.status === "DEGRADED") {
+
+        gsmSectors.forEach((sec) => {
+          if (!sec.bounds || sec.bounds.length < 3) return;
+
+          let color = "#475569";
+          let weight = 1;
+          let dashArray = "3, 5";
+          let fillColor = "#0f172a";
+          let fillOpacity = 0.14;
+
+          let badgeHtml = "";
+          let tooltipHtml = "";
+
+          if (!sec.surveyed) {
+            // UNKNOWN / Fog of War - waiting for drone pass
+            color = "#334155";
+            weight = 1;
+            dashArray = "3, 5";
+            fillColor = "#0f172a";
+            fillOpacity = 0.16;
+
+            badgeHtml = `
+              <div style="font-family:monospace; font-size:10px; font-weight:600; color:#64748b; background:rgba(15,23,42,0.85); padding:1px 5px; border-radius:3px; border:1px solid rgba(100,116,139,0.3); text-align:center; pointer-events:none; white-space:nowrap; box-shadow:0 1px 4px rgba(0,0,0,0.5);">
+                ${sec.id}
+              </div>
+            `;
+            tooltipHtml = `
+              <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
+                <b style="color:#94a3b8;">SEKTOR ${sec.id}</b><br>
+                <span style="color:#64748b;">Status: Nieprzebadany (Fog of War)</span><br>
+                <span style="color:#94a3b8; font-size:10px;">Oczekuje na przelot roju UAV i pomiar RF</span>
+              </div>
+            `;
+          } else if (sec.status === "NORMAL") {
+            // NORMAL - GSM operational
+            color = "#10b981";
+            weight = 1.5;
+            dashArray = null;
+            fillColor = "#10b981";
+            fillOpacity = 0.18;
+
+            badgeHtml = `
+              <div style="font-family:monospace; font-size:9.5px; font-weight:700; color:#10b981; background:rgba(6,78,59,0.92); padding:2px 5px; border-radius:4px; border:1px solid rgba(16,185,129,0.8); box-shadow:0 0 8px rgba(16,185,129,0.45); text-align:center; white-space:nowrap; pointer-events:none;">
+                ${sec.id} • ${sec.avg_rssi_dbm} dBm
+              </div>
+            `;
+            tooltipHtml = `
+              <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
+                <b style="color:#10b981;">SEKTOR ${sec.id} - GSM SPRAWNY</b><br>
+                Poziom sygnału: <b>${sec.avg_rssi_dbm} dBm</b><br>
+                Rozpoznany przez: <b>${sec.surveyed_by || "UAV"}</b> (${sec.surveyed_time_sec ? sec.surveyed_time_sec + "s" : ""})<br>
+                <span style="color:#6ee7b7; font-size:10px;">Infrastruktura komórkowa sprawna</span>
+              </div>
+            `;
+          } else if (sec.status === "DEGRADED") {
+            // DEGRADED - Weak signal / Interference
             color = "#f59e0b";
-            opacity = 0.25;
-          }
-          if (pt.status === "BLACKOUT") {
+            weight = 1.5;
+            dashArray = null;
+            fillColor = "#f59e0b";
+            fillOpacity = 0.24;
+
+            badgeHtml = `
+              <div style="font-family:monospace; font-size:9.5px; font-weight:700; color:#fbbf24; background:rgba(120,53,15,0.92); padding:2px 5px; border-radius:4px; border:1px solid rgba(245,158,11,0.8); box-shadow:0 0 8px rgba(245,158,11,0.45); text-align:center; white-space:nowrap; pointer-events:none;">
+                ${sec.id} • ${sec.avg_rssi_dbm} dBm
+              </div>
+            `;
+            tooltipHtml = `
+              <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
+                <b style="color:#f59e0b;">SEKTOR ${sec.id} - SYGNAŁ ZDEGRADOWANY</b><br>
+                Poziom sygnału: <b>${sec.avg_rssi_dbm} dBm</b><br>
+                Rozpoznany przez: <b>${sec.surveyed_by || "UAV"}</b> (${sec.surveyed_time_sec ? sec.surveyed_time_sec + "s" : ""})<br>
+                <span style="color:#fcd34d; font-size:10px;">Zaniki sygnału / strefa brzegowa blackoutu</span>
+              </div>
+            `;
+          } else {
+            // BLACKOUT - Total cellular infrastructure failure
             color = "#ef4444";
-            opacity = 0.4;
+            weight = 2;
+            dashArray = "5, 4";
+            fillColor = "#ef4444";
+            fillOpacity = 0.32;
+
+            badgeHtml = `
+              <div style="font-family:monospace; font-size:9.5px; font-weight:800; color:#ffffff; background:rgba(185,28,28,0.95); padding:2px 6px; border-radius:4px; border:1px solid #fca5a5; box-shadow:0 0 10px rgba(239,68,68,0.7); display:flex; align-items:center; gap:3px; white-space:nowrap; pointer-events:none;">
+                <span style="color:#fecaca;">⚠️</span> ${sec.id} BLACKOUT
+              </div>
+            `;
+            tooltipHtml = `
+              <div style="font-family:sans-serif; font-size:11px; line-height:1.4;">
+                <b style="color:#ef4444;">⚠️ SEKTOR ${sec.id} - WYKRYTO AWARIĘ GSM</b><br>
+                Brak nośnej stacji bazowej: <b style="color:#f87171;">${sec.avg_rssi_dbm} dBm</b><br>
+                Wykryty przez sniffer: <b>${sec.surveyed_by || "UAV"}</b> (${sec.surveyed_time_sec ? sec.surveyed_time_sec + "s" : ""})<br>
+                <span style="color:#fca5a5; font-weight:600; font-size:10px;">Strefa priorytetowa poszukiwań ratowniczych SAR</span>
+              </div>
+            `;
           }
 
-          L.circle([pt.lat, pt.lon], {
-            radius: 65,
-            stroke: false,
-            fillColor: color,
-            fillOpacity: opacity,
-          }).addTo(gsmGridLayer);
-        });
-      }
-
-      if (gsmTowerLayer) {
-        gsmTowerLayer.clearLayers();
-      }
-
-      // Render Crisis Blackout Boundary Circles
-      if (gsmCrisisLayer) {
-        gsmCrisisLayer.clearLayers();
-        if (snapshot.gsm_crisis_center) {
-          const { lat, lon, radius_m } = snapshot.gsm_crisis_center;
-          L.circle([lat, lon], {
-            radius: radius_m,
-            color: "#f59e0b",
-            weight: 1.5,
-            dashArray: "5, 6",
-            fillColor: "#f59e0b",
-            fillOpacity: 0.04,
+          // Render Sector Polygon
+          L.polygon(sec.bounds, {
+            color,
+            weight,
+            dashArray,
+            fillColor,
+            fillOpacity,
           })
-            .bindTooltip(
-              `<b>Strefa Awarii GSM</b>: promień ${(radius_m / 1000).toFixed(1)} km`,
-              { sticky: true }
-            )
-            .addTo(gsmCrisisLayer);
+            .bindTooltip(tooltipHtml, { sticky: true })
+            .addTo(gsmSectorsLayer);
 
-          L.circle([lat, lon], {
-            radius: radius_m * 0.65,
-            color: "#ef4444",
-            weight: 1.8,
-            dashArray: "6, 6",
-            fillColor: "#ef4444",
-            fillOpacity: 0.08,
-          }).addTo(gsmCrisisLayer);
-        }
+          // Render Centered Tactical Badge
+          if (sec.center_lat && sec.center_lon) {
+            const labelIcon = L.divIcon({
+              className: "gsm-sector-label",
+              html: badgeHtml,
+              iconSize: [60, 20],
+              iconAnchor: [30, 10],
+            });
+            L.marker([sec.center_lat, sec.center_lon], { icon: labelIcon, interactive: false }).addTo(
+              gsmSectorsLayer
+            );
+          }
+        });
       }
     }
 
@@ -453,40 +517,57 @@ export function TacticalMap({ snapshot, focusedCoordinate, config }) {
             Wysokość: <b>${d.alt_m} m</b> | Prędkość: <b>${d.speed_mps} m/s</b><br>
             Bateria: <b>${d.battery_pct}%</b> | Status: <b>${d.status}</b><br>
             Pakiety RF: <b>${d.packets_sniffed}</b>
+            ${d.target_poi_id ? `<br><b style="color:#06b6d4;">🛸 Zawis nad POI: ${d.target_poi_id}</b>` : ""}
           </div>`,
           { sticky: true }
         );
       });
     }
 
-    // 8. Localized Victim Signals (POIs) with CEP Uncertainty Circles and Radar Beacon
+    // 8. Localized Victim Signals (POIs) with CEP Uncertainty Circles, Radar Beacon & Hover Tether
     const poisLayer = layersRef.current.pois;
     poisLayer.clearLayers();
 
     if (pois && pois.length > 0) {
       pois.forEach((poi) => {
+        const isInspected = !!poi.is_being_inspected;
+        const color = isInspected ? "#06b6d4" : "#ff3366";
+
         // Geodetic Uncertainty Circle
         L.circle([poi.est_lat, poi.est_lon], {
           radius: poi.uncertainty_radius_m,
-          color: "#ff3366",
-          weight: 1.5,
-          dashArray: "5, 6",
-          fillColor: "#ff3366",
-          fillOpacity: 0.12,
+          color: color,
+          weight: isInspected ? 2 : 1.5,
+          dashArray: isInspected ? "3, 4" : "5, 6",
+          fillColor: color,
+          fillOpacity: isInspected ? 0.22 : 0.12,
           interactive: false,
         }).addTo(poisLayer);
+
+        // Hover tether line from inspecting drone
+        if (isInspected && poi.inspecting_drone_id && drones) {
+          const inspDrone = drones.find((d) => d.id === poi.inspecting_drone_id || d.drone_id === poi.inspecting_drone_id);
+          if (inspDrone) {
+            L.polyline(
+              [[inspDrone.lat, inspDrone.lon], [poi.est_lat, poi.est_lon]],
+              { color: "#06b6d4", weight: 2, dashArray: "4, 4", opacity: 0.85 }
+            ).addTo(poisLayer);
+          }
+        }
 
         // Concentric Radar Beacon Pin
         const poiIcon = L.divIcon({
           className: "poi-marker-div",
           html: `
             <div class="poi-beacon-wrapper">
-              <div class="poi-beacon-ripple"></div>
-              <div class="poi-beacon-ripple delay"></div>
-              <div class="poi-beacon-core">
-                <span style="font-size:8px; line-height:1; color:#fff;">●</span>
+              <div class="poi-beacon-ripple" style="border-color:${color};"></div>
+              <div class="poi-beacon-ripple delay" style="border-color:${color};"></div>
+              <div class="poi-beacon-core" style="background:${color}; box-shadow:0 0 14px ${color};">
+                <span style="font-size:8px; line-height:1; color:#000;">${isInspected ? "▲" : "●"}</span>
               </div>
-              <div class="poi-beacon-label">±${poi.uncertainty_radius_m.toFixed(0)}m</div>
+              <div class="poi-beacon-label" style="border-color:${color}; color:${color};">
+                ${isInspected ? `🛸 ${poi.inspecting_drone_id} ` : ""}±${poi.uncertainty_radius_m.toFixed(0)}m
+              </div>
             </div>
           `,
           iconSize: [32, 32],
@@ -496,25 +577,83 @@ export function TacticalMap({ snapshot, focusedCoordinate, config }) {
         const marker = L.marker([poi.est_lat, poi.est_lon], { icon: poiIcon }).addTo(poisLayer);
         marker.bindTooltip(
           `<div style="font-family:monospace; font-size:11px; padding:3px;">
-            <b style="color:#ff3366;">🎯 WYKRYTY SYGNAŁ RF (OFIARA)</b><br>
+            <b style="color:${color};">${isInspected ? "🛸 ZAWIS NAD CELEM (INSPEKCJA)" : "🎯 WYKRYTY SYGNAŁ RF (OFIARA)"}</b><br>
             ID: <b>${poi.anonymized_id}</b><br>
             Typ: <b>${poi.signal_type}</b><br>
             Niepewność CEP: <b>±${poi.uncertainty_radius_m} m</b><br>
             Pewność: <b>${Math.round(poi.confidence * 100)}%</b><br>
+            ${isInspected ? `<b style="color:#06b6d4;">Badający dron: ${poi.inspecting_drone_id}</b><br>` : ""}
             Odebrane pakiety: <b>${poi.detections_count}</b><br>
             Ostatnie RSSI: <b>${poi.last_rssi_dbm} dBm</b><br>
-            Wykryty przez: <b>${poi.sniffed_by_drones.join(", ")}</b>
+            Wykryty przez: <b>${poi.sniffed_by_drones.join(", ")}</b><br>
+            <span style="color:#38bdf8; font-size:9.5px; font-weight:600;">Kliknij punkt aby ${isInspected ? "wznowić patrol roju" : "wysłać drona w zawis"}</span>
           </div>`,
           { sticky: true }
         );
+
+        marker.on("click", () => {
+          if (isInspected) {
+            if (onResumeSearch && poi.inspecting_drone_id) {
+              onResumeSearch(poi.inspecting_drone_id);
+            }
+          } else {
+            if (onInspectPOI) {
+              onInspectPOI(poi.anonymized_id);
+            }
+          }
+        });
       });
     }
-  }, [snapshot, showFlightPaths, showMeshRanges, showGcsRange, showGsmBlackout]);
+  }, [snapshot, showFlightPaths, showMeshRanges, showGcsRange, showGsmBlackout, onInspectPOI, onResumeSearch]);
+
+  // Derived Reconnaissance Metrics for HUD & Buttons
+  const gsmSectors = snapshot?.gsm_sectors || [];
+  const totalSectors = snapshot?.stats?.gsm_sectors_total || gsmSectors.length;
+  const surveyedCount = snapshot?.stats?.gsm_sectors_surveyed || gsmSectors.filter((s) => s.surveyed).length;
+  const blackoutCount = snapshot?.stats?.gsm_sectors_blackout || gsmSectors.filter((s) => s.status === "BLACKOUT").length;
+  const degradedCount = gsmSectors.filter((s) => s.status === "DEGRADED").length;
+  const reconPct = snapshot?.stats?.gsm_recon_pct ?? (totalSectors > 0 ? Math.round((surveyedCount / totalSectors) * 100) : 0);
 
   return (
     <div className="relative w-full h-full min-h-0 flex-1 overflow-hidden rounded-lg border border-border/50 bg-[#090d16] shadow-xl">
       {/* Leaflet Map Canvas */}
       <div ref={mapContainerRef} className="w-full h-full min-h-0 z-10" />
+
+      {/* Floating Tactical GSM Reconnaissance Status HUD Pill */}
+      {showGsmBlackout && totalSectors > 0 && (
+        <div className="absolute top-3 left-3 z-20 flex items-center gap-2.5 bg-card/90 backdrop-blur-md border border-border/70 px-3 py-1.5 rounded-lg shadow-2xl font-mono text-[11px] select-none pointer-events-auto">
+          <div className="flex items-center gap-1.5 font-bold text-foreground">
+            <Radio className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Rozpoznanie GSM:</span>
+          </div>
+
+          <span className="text-cyan-300 font-semibold">
+            {surveyedCount}/{totalSectors} ({reconPct}%)
+          </span>
+
+          <span className="text-border">|</span>
+
+          {blackoutCount > 0 ? (
+            <span className="flex items-center gap-1 text-rose-400 font-bold">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+              {blackoutCount} w stanie Blackout
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              {surveyedCount === 0 ? "Oczekiwanie na pierwszy przelot..." : "Brak awarii w zbadanych"}
+            </span>
+          )}
+
+          {degradedCount > 0 && (
+            <>
+              <span className="text-border">|</span>
+              <span className="text-amber-400 font-medium">
+                {degradedCount} zakłóconych
+              </span>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Floating Tactical Layer Quick-Toggles */}
       <div className="absolute bottom-3 left-3 z-20 flex flex-wrap items-center gap-1.5 bg-card/85 backdrop-blur-md border border-border/60 p-1 rounded-lg shadow-2xl">
@@ -572,11 +711,20 @@ export function TacticalMap({ snapshot, focusedCoordinate, config }) {
           variant={showGsmBlackout ? "default" : "outline"}
           onClick={() => setShowGsmBlackout(!showGsmBlackout)}
           className={`h-6 px-2 text-[10px] font-mono gap-1 cursor-pointer ${
-            showGsmBlackout ? "bg-rose-950/70 text-rose-300 border border-rose-500/50" : "text-muted-foreground"
+            showGsmBlackout
+              ? blackoutCount > 0
+                ? "bg-rose-950/70 text-rose-300 border border-rose-500/50"
+                : "bg-cyan-950/70 text-cyan-300 border border-cyan-500/50"
+              : "text-muted-foreground"
           }`}
         >
           {showGsmBlackout ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-          Blackout GSM
+          Sektory GSM {totalSectors > 0 ? `(${surveyedCount}/${totalSectors})` : ""}
+          {blackoutCount > 0 && (
+            <span className="ml-0.5 px-1 py-0 rounded text-[9px] bg-rose-600 text-white font-bold">
+              {blackoutCount} ⚠️
+            </span>
+          )}
         </Button>
       </div>
     </div>

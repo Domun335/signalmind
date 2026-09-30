@@ -15,12 +15,18 @@ export function useSimulationSocket() {
   const socketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const isMountedRef = useRef(true);
+  const connectRef = useRef(null);
 
   // Connect to telemetry WebSocket stream
   const connect = useCallback(() => {
     if (!isMountedRef.current) return;
     if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)) {
       return;
+    }
+
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
 
     setConnecting(true);
@@ -58,34 +64,43 @@ export function useSimulationSocket() {
         setConnecting(false);
         socketRef.current = null;
         console.log("[OutOfBlack] WebSocket disconnected. Reconnecting in 2s...");
-        reconnectTimeoutRef.current = setTimeout(connect, 2000);
+        if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+        reconnectTimeoutRef.current = setTimeout(() => {
+          if (isMountedRef.current && connectRef.current) connectRef.current();
+        }, 2000);
       };
     } catch (err) {
       setConnected(false);
       setConnecting(false);
-      reconnectTimeoutRef.current = setTimeout(connect, 3000);
-    }
-  }, []);
-
-  // Fetch initial REST snapshot as fallback
-  const fetchInitialState = useCallback(async () => {
-    try {
-      const res = await fetch(`${BACKEND_URL}/simulation/state`);
-      if (res.ok) {
-        const data = await res.json();
-        setSnapshot(data);
-      }
-    } catch (err) {
-      console.warn("[OutOfBlack] Initial state fetch error:", err);
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current && connectRef.current) connectRef.current();
+      }, 3000);
     }
   }, []);
 
   useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
+  useEffect(() => {
     isMountedRef.current = true;
-    fetchInitialState();
-    connect();
+    let didCancel = false;
+
+    fetch(`${BACKEND_URL}/simulation/state`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!didCancel && data) setSnapshot(data);
+      })
+      .catch((err) => console.warn("[OutOfBlack] Initial fetch error:", err));
+
+    const timer = setTimeout(() => {
+      connect();
+    }, 0);
 
     return () => {
+      clearTimeout(timer);
+      didCancel = true;
       isMountedRef.current = false;
       if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
       if (socketRef.current) {
@@ -93,7 +108,7 @@ export function useSimulationSocket() {
         socketRef.current = null;
       }
     };
-  }, [connect, fetchInitialState]);
+  }, [connect]);
 
   // REST Control Actions (stable callbacks)
   const startMission = useCallback(async () => {
@@ -111,6 +126,41 @@ export function useSimulationSocket() {
       return await res.json();
     } catch (err) {
       console.error("Pause error:", err);
+    }
+  }, []);
+
+  const abortMission = useCallback(async () => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/mission/abort`, { method: "POST" });
+      return await res.json();
+    } catch (err) {
+      console.error("Abort mission error:", err);
+    }
+  }, []);
+
+  const swapBattery = useCallback(async (drone_id = null) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/mission/swap-battery`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ drone_id }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Swap battery error:", err);
+    }
+  }, []);
+
+  const relaunchDrone = useCallback(async (drone_id = null) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/mission/relaunch-drone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ drone_id }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Relaunch drone error:", err);
     }
   }, []);
 
@@ -186,6 +236,32 @@ export function useSimulationSocket() {
     }
   }, []);
 
+  const inspectPOI = useCallback(async (anonymized_id, drone_id = null, altitude_m = 35.0, hover_duration_sec = null) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/mission/inspect-poi`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ anonymized_id, drone_id, altitude_m, hover_duration_sec }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Inspect POI error:", err);
+    }
+  }, []);
+
+  const resumeSearch = useCallback(async (drone_id = null) => {
+    try {
+      const res = await fetch(`${BACKEND_URL}/mission/resume-search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ drone_id }),
+      });
+      return await res.json();
+    } catch (err) {
+      console.error("Resume search error:", err);
+    }
+  }, []);
+
   const fetchConfig = fetchSimulationConfig;
   const updateConfig = updateSimulationConfig;
 
@@ -198,9 +274,14 @@ export function useSimulationSocket() {
     startMission,
     pauseMission,
     resumeMission,
+    abortMission,
+    swapBattery,
+    relaunchDrone,
     resetMission,
     setSpeed,
     injectVictim,
+    inspectPOI,
+    resumeSearch,
     fetchConfig,
     updateConfig,
     fetchSimulationConfig,
