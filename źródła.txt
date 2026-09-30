@@ -1,0 +1,19 @@
+Prace potwierdzające problem i wsparcie teoretyczne pokazujące wykonalność zbudowania rozwiązania:
+
+- Humanity Lifeline: A Resilient Communication and Sensor Network Framework for Disaster Response (IEEE Access, 2025)
+- Wi-SF: Aerial Wi-Fi Sensing Function for Enhancing Search and Rescue Operation (Kashihara et al., IEEE GHTC, 2019)
+- SARDO: An Automated Search-and-Rescue Drone-based Solution for Victims Localization (Albanese et al., IEEE TMC, 2021)
+- A Study of MAC Address Randomization in Mobile Devices and When It Fails (Martin et al., PoPETs, 2017)
+
+Otwarte bazy danych z użytmi danymi:
+- https://www.genesys-lab.org/oracle
+- https://arxiv.org/html/2303.01635v1
+
+Modele i grafiki:
+- Canva
+- Adobe Stock
+- eloblog.pl
+
+Użycie AI:
+- Cześć grafik zostało wygenerowane w ChatGPT (OpenAI)
+- Wsparcie w kodzie Gemini (Google)
