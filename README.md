@@ -43,8 +43,8 @@ signalmind/
 │   │   ├── components/setup/     # Simulation Studio (kreator parametrów misji i mapy)
 │   │   ├── components/dashboard/ # Kokpit operacyjny (mapa GIS Leaflet, roje, sygnały, mesh)
 │   │   └── hooks/                # Klient WebSocket z automatyczną retransmisją i buforowaniem
-│   │
-│   └── landing/                  # Landing page prezentacyjny projektu SignalMind
+│
+prezentacyjny projektu SignalMind
 │       └── app/                  # Cyber-radar UI z animacjami i opisem technologii
 │
 └── README.md                     # Niniejszy dokument
