@@ -12,7 +12,7 @@ Otwarte bazy danych z użytmi danymi:
 Modele i grafiki:
 - Canva
 - Adobe Stock
-- eloblog.pl
+- pol-ukr.com
 
 Użycie AI:
 - Cześć grafik zostało wygenerowane w ChatGPT (OpenAI)
